@@ -241,6 +241,10 @@ class Prediction():
                             os.remove(file_path)
     
     # def false_binary_image(self,filename ,image):
+    def save_image(self, filename ,image):
+        if self.save_run== True:
+            cv2.imwrite(os.path.join(self.runtime_path, f"{filename}_processed.jpg"), image)     
+                                       
     def load_images_from_folder(self, folder,select):
         if select == 1:
             processed_images = []
