@@ -54,11 +54,12 @@ class Prediction():
             if image is None:
                 print(f"Error: Failed to load image {filename}.")
                 return
-            
             self.filename_list.append(filename)
             # Preprocess the image
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 2)
+            image_for_process = image.copy()
+            contrasted_image = cv2.convertScaleAbs(image_for_process, 1.5, 10)
+            gray_image = cv2.cvtColor(contrasted_image, cv2.COLOR_BGR2GRAY)
+            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 1)
             imgThreshold = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 11)
             imgMedian = cv2.medianBlur(imgThreshold, 5)
             kernel = np.ones((3, 3), np.uint8)
