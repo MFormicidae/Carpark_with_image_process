@@ -1,0 +1,317 @@
+{
+    "annotations": [
+        {
+            "id": 0,
+            "iscrowd": 0,
+            "image_id": 46,
+            "category_id": 2,
+            "segmentation": [
+                [
+                    827.7358432985696,
+                    455.84906811984047,
+                    878.7924251916274,
+                    665.6603773584906,
+                    999.5471421727595,
+                    662.6415094339623,
+                    918.0377082104953,
+                    454.3396226415095
+                ]
+            ],
+            "bbox": [
+                827.7358432985696,
+                454.3396226415095,
+                171.8112988741899,
+                211.32075471698107
+            ],
+            "area": 22211.460616266966
+        }
+    ],
+    "categories": [
+        {
+            "id": 1,
+            "name": "Full"
+        },
+        {
+            "id": 2,
+            "name": "Empty"
+        }
+    ],
+    "images": [
+        {
+            "id": 1,
+            "width": 1280,
+            "height": 720,
+            "file_name": "1.jpg"
+        },
+        {
+            "id": 2,
+            "width": 1280,
+            "height": 720,
+            "file_name": "2.jpg"
+        },
+        {
+            "id": 3,
+            "width": 1280,
+            "height": 720,
+            "file_name": "3.jpg"
+        },
+        {
+            "id": 4,
+            "width": 1280,
+            "height": 720,
+            "file_name": "4.jpg"
+        },
+        {
+            "id": 5,
+            "width": 1280,
+            "height": 720,
+            "file_name": "5.jpg"
+        },
+        {
+            "id": 6,
+            "width": 1280,
+            "height": 720,
+            "file_name": "6.jpg"
+        },
+        {
+            "id": 7,
+            "width": 1280,
+            "height": 720,
+            "file_name": "7.jpg"
+        },
+        {
+            "id": 8,
+            "width": 1280,
+            "height": 720,
+            "file_name": "8.jpg"
+        },
+        {
+            "id": 9,
+            "width": 1280,
+            "height": 720,
+            "file_name": "9.jpg"
+        },
+        {
+            "id": 10,
+            "width": 1280,
+            "height": 720,
+            "file_name": "10.jpg"
+        },
+        {
+            "id": 11,
+            "width": 1280,
+            "height": 720,
+            "file_name": "11.jpg"
+        },
+        {
+            "id": 12,
+            "width": 1280,
+            "height": 720,
+            "file_name": "12.jpg"
+        },
+        {
+            "id": 13,
+            "width": 1280,
+            "height": 720,
+            "file_name": "13.jpg"
+        },
+        {
+            "id": 14,
+            "width": 1280,
+            "height": 720,
+            "file_name": "14.jpg"
+        },
+        {
+            "id": 15,
+            "width": 1280,
+            "height": 720,
+            "file_name": "15.jpg"
+        },
+        {
+            "id": 16,
+            "width": 1280,
+            "height": 720,
+            "file_name": "16.jpg"
+        },
+        {
+            "id": 17,
+            "width": 1280,
+            "height": 720,
+            "file_name": "17.jpg"
+        },
+        {
+            "id": 18,
+            "width": 1280,
+            "height": 720,
+            "file_name": "18.jpg"
+        },
+        {
+            "id": 19,
+            "width": 1280,
+            "height": 720,
+            "file_name": "19.jpg"
+        },
+        {
+            "id": 20,
+            "width": 1280,
+            "height": 720,
+            "file_name": "20.jpg"
+        },
+        {
+            "id": 21,
+            "width": 1280,
+            "height": 720,
+            "file_name": "21.jpg"
+        },
+        {
+            "id": 22,
+            "width": 1280,
+            "height": 720,
+            "file_name": "22.jpg"
+        },
+        {
+            "id": 23,
+            "width": 1280,
+            "height": 720,
+            "file_name": "23.jpg"
+        },
+        {
+            "id": 24,
+            "width": 1280,
+            "height": 720,
+            "file_name": "24.jpg"
+        },
+        {
+            "id": 25,
+            "width": 1280,
+            "height": 720,
+            "file_name": "25.jpg"
+        },
+        {
+            "id": 26,
+            "width": 1280,
+            "height": 720,
+            "file_name": "26.jpg"
+        },
+        {
+            "id": 27,
+            "width": 1280,
+            "height": 720,
+            "file_name": "27.jpg"
+        },
+        {
+            "id": 28,
+            "width": 1280,
+            "height": 720,
+            "file_name": "28.jpg"
+        },
+        {
+            "id": 29,
+            "width": 1280,
+            "height": 720,
+            "file_name": "29.jpg"
+        },
+        {
+            "id": 30,
+            "width": 1280,
+            "height": 720,
+            "file_name": "30.jpg"
+        },
+        {
+            "id": 31,
+            "width": 1280,
+            "height": 720,
+            "file_name": "31.jpg"
+        },
+        {
+            "id": 32,
+            "width": 1280,
+            "height": 720,
+            "file_name": "32.jpg"
+        },
+        {
+            "id": 33,
+            "width": 1280,
+            "height": 720,
+            "file_name": "33.jpg"
+        },
+        {
+            "id": 34,
+            "width": 1280,
+            "height": 720,
+            "file_name": "34.jpg"
+        },
+        {
+            "id": 35,
+            "width": 1280,
+            "height": 720,
+            "file_name": "35.jpg"
+        },
+        {
+            "id": 36,
+            "width": 1280,
+            "height": 720,
+            "file_name": "36.jpg"
+        },
+        {
+            "id": 37,
+            "width": 1280,
+            "height": 720,
+            "file_name": "37.jpg"
+        },
+        {
+            "id": 38,
+            "width": 1280,
+            "height": 720,
+            "file_name": "38.jpg"
+        },
+        {
+            "id": 39,
+            "width": 1280,
+            "height": 720,
+            "file_name": "39.jpg"
+        },
+        {
+            "id": 40,
+            "width": 1280,
+            "height": 720,
+            "file_name": "40.jpg"
+        },
+        {
+            "id": 41,
+            "width": 1280,
+            "height": 720,
+            "file_name": "41.jpg"
+        },
+        {
+            "id": 42,
+            "width": 1280,
+            "height": 720,
+            "file_name": "42.jpg"
+        },
+        {
+            "id": 43,
+            "width": 1280,
+            "height": 720,
+            "file_name": "43.jpg"
+        },
+        {
+            "id": 44,
+            "width": 1280,
+            "height": 720,
+            "file_name": "44.jpg"
+        },
+        {
+            "id": 45,
+            "width": 1280,
+            "height": 720,
+            "file_name": "45.jpg"
+        },
+        {
+            "id": 46,
+            "width": 1280,
+            "height": 720,
+            "file_name": "46.jpg"
+        }
+    ]
+}

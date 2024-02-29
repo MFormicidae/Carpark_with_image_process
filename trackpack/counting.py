@@ -17,7 +17,6 @@ class Prediction():
         self.FN = 0  # False Negatives
         self.TN = 0  # True Negatives
         self.save_run = False
-        
         self.region_data = []
 
     def process_image(self, image_list, data, image_path, save_runtime =None):
@@ -57,22 +56,26 @@ class Prediction():
             
             self.filename_list.append(filename)
             # Preprocess the image
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 2)
-            imgThreshold = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 11)
-            imgMedian = cv2.medianBlur(imgThreshold, 5)
+            image_for_process = image.copy()
+            contrasted_image = cv2.convertScaleAbs(image_for_process, 1.5, 10)
+            gray_image = cv2.cvtColor(contrasted_image, cv2.COLOR_BGR2GRAY)
+            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 1)
+            # image_bailateral = cv2.bilateralFilter(blurred_image, 9,200,200)
+            imgThreshold = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,21, 16)
+            threshold_blurred = cv2.bilateralFilter(imgThreshold,9,200,200)
+            image_coords = cv2.adaptiveThreshold(threshold_blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 16)
             kernel = np.ones((3, 3), np.uint8)
-            imgDilate = cv2.dilate(imgMedian, kernel, iterations=1)
+            imgDilate = cv2.dilate(image_coords, kernel, iterations=1)
             labels_dataset = []
             results_predicted = []
-              # Store data for each region
+            # Store data for each region
             images = []
             correct_predictions = 0  #count for correct predictions
             total_regions = 0  #  count for total regions
             warning_occurred = False
             vis_image = image.copy()
             bw_image = imgDilate.copy()
-            # region_data.append(filename)
+          
             for i, annotation in enumerate(annotations.values(), start=1):
                 data_labels = annotation.get('region_attributes', {}).get('label', 'No Label')
                 shape = annotation['shape_attributes']
@@ -94,7 +97,7 @@ class Prediction():
                     color = (0, 0, 255) #Red = full
                     labels_predicted = 1 
                 label = str(non_count)
-
+                # print(i,count_crop)
                 # Draw the polygon on the visualization image
                 vis_image = cv2.polylines(vis_image, [points], True, color, thickness=2)
 
@@ -142,14 +145,20 @@ class Prediction():
                         }) 
                 cv2.putText(vis_image, f"{i}", (x_center, y_center), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,152,255), 2, cv2.LINE_AA)
                 cv2.putText(vis_image, label, (x_center, y_center + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
-                
+                # cv2.putText(vis_image, label, (x_center, y_center + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
             # Define the dimensions of the grid
             if warning_occurred:
-                self.false_image(filename,vis_image)
-                self.false_image(f"BW{filename}",bw_image)
+                # print(filename ,i ,count_crop,count_threshold)
+                self.save_image(filename,vis_image)
+                self.save_image(f"BW{filename}",bw_image)
+                # self.save_image(f"contrast{filename}",image_for_process)
                 self.false_images_predict.append(vis_image)
             else:
                 self.total_correct_predictions =+1
+                self.save_image(f"Result{filename}",vis_image)
+                self.save_image(f"BW{filename}",bw_image)
+                # self.save_image(f"contrast{filename}",contrasted_image)
+
             accuracy = (correct_predictions / total_regions) 
             self.accuracy_accumulated.append(accuracy)
         
@@ -157,15 +166,18 @@ class Prediction():
         if self.save_run == True:
             image_read = self.load_images_from_folder(self.runtime_path,1)
             bw_read = self.load_images_from_folder(self.runtime_path,2)
+            true_image = self.load_images_from_folder(self.runtime_path,3)
             # Display or save the resulting mosaic
             self.delete_files(self.runtime_path,1)
             self.delete_files(self.runtime_path,2)
-            self.save_image_mosaic(image_read, len(self.false_images_predict)//3, len(self.false_images_predict)//4,"False_Return")
-            self.save_image_mosaic(bw_read,len(self.false_images_predict)//3, len(self.false_images_predict)//4,"BW_False_Return")
+            self.delete_files(self.runtime_path,3)
+            self.save_image_mosaic(image_read,3,4,"False_Return")
+            self.save_image_mosaic(bw_read,3, 4,"BW_Return")
+            self.save_image_mosaic(true_image,4,3 ,"True_Image_Return")
             self.summary_result()
             self.summary_image()
             self.accumulate_region_accuracy(self.region_data)
-        # print()
+        
     def accumulate_region_accuracy(self, data):
                 # Create a dictionary to store counts of correct and total predictions for each region
         region_counts = defaultdict(lambda: {'correct': 0, 'total': 0})
@@ -220,9 +232,19 @@ class Prediction():
                         if os.path.isfile(file_path):
                             # print(file_path)
                             os.remove(file_path)
+            if select == 3:
+                # List all files in the folder
+                files = os.listdir(folder_path)
+                # Iterate through each file and delete it
+                for file_name in files:
+                    if file_name.startswith('R'):
+                        file_path = os.path.join(folder_path, file_name)
+                        if os.path.isfile(file_path):
+                            # print(file_path)
+                            os.remove(file_path)
     
     # def false_binary_image(self,filename ,image):
-    def false_image(self, filename ,image):
+    def save_image(self, filename ,image):
         if self.save_run== True:
             cv2.imwrite(os.path.join(self.runtime_path, f"{filename}_processed.jpg"), image)
     
@@ -243,15 +265,36 @@ class Prediction():
                     if img is not None:
                         processed_images.append(img)
             return processed_images
+        elif select == 3:
+            processed_images = []
+            for filename in sorted(os.listdir(folder)):
+                if filename.startswith('R'):
+                    img = cv2.imread(os.path.join(folder, filename))
+                    if img is not None:
+                        processed_images.append(img)
+            return processed_images
 
     def save_image_mosaic(self, images, rows, cols, file_name):
         # Calculate the maximum number of images to plot in the mosaic
-        max_images = rows * cols
-        if len(images) > max_images:
-            images = images[:max_images]  # Truncate the list to contain only the first max_images
+       
+        num_images = len(images)
+        # Check if there are no images
+        if num_images == 0:
+            print("No images provided.")
+            return
+        # Calculate the number of rows and columns based on the number of images
+        rows = min(rows, num_images)
+        cols = min(cols, num_images)
+        while rows * cols < num_images:
+            if cols > rows:
+                rows += 1
+            else:
+                cols += 1
 
+        # Calculate the dimensions of the mosaic
         mosaic_height = images[0].shape[0] * rows
         mosaic_width = images[0].shape[1] * cols
+        
         mosaic = np.zeros((mosaic_height, mosaic_width, 3), dtype=np.uint8)
 
         for i in range(rows):
@@ -300,10 +343,12 @@ class Prediction():
         plt.xlabel('Image')
         plt.ylabel('Accuracy')
         plt.title('Accuracy for Each Image')
-        plt.xticks(rotation=60)
+        plt.xticks(rotation=90)
         plt.grid(axis='y', linestyle='--')  
         plt.tight_layout()
         if self.save_run == True: 
             plt.savefig(os.path.join(self.runtime_path, 'Accuracy for Each Image.png'))
 
-   
+if __name__ == "__main__":
+    pass
+  
