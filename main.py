@@ -11,6 +11,6 @@ read_data = ReadData()
 image_list, image_path = read_data.get_image_list()
 data = read_data.get_data()
 
-predict = Prediction(0.17)
+predict = Prediction(0.20)
 predict.process_image(image_list, data, image_path,1)
   
