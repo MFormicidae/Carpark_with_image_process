@@ -57,8 +57,8 @@ class Prediction():
             self.filename_list.append(filename)
             # Preprocess the image
             image_for_process = image.copy()
-            contrasted_image = cv2.convertScaleAbs(image_for_process, 1.5, 10)
-            gray_image = cv2.cvtColor(contrasted_image, cv2.COLOR_BGR2GRAY)
+
+            gray_image = cv2.cvtColor(image_for_process, cv2.COLOR_BGR2GRAY)
             blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 1)
             # image_bailateral = cv2.bilateralFilter(blurred_image, 9,200,200)
             imgThreshold = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,21, 16)
@@ -211,7 +211,6 @@ class Prediction():
 
     def delete_files(self, folder_path,select):
         if self.save_run == True:
-
             if select == 1:
                 # List all files in the folder
                 files = os.listdir(folder_path)
