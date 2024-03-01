@@ -318,6 +318,9 @@ class Prediction():
         #create confusion matrix
         confusion_matrix = np.array([[self.TP, self.FP],
                                      [self.FN, self.TN]])
+        all_confusion_matrix = self.TP+self.FN+self.TN+self.FP
+        accuracy_matrix = (self.FP+self.FN)/all_confusion_matrix
+        print(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
         plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title('Confusion Matrix')
         plt.colorbar()
@@ -333,6 +336,8 @@ class Prediction():
             for j in range(len(classes)):
                 plt.text(j, i, str(confusion_matrix[i][j]))
         if self.save_run == True: 
+            with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
+                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
             plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
      
     def summary_image(self):
