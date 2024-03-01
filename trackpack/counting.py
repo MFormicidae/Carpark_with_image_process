@@ -54,11 +54,13 @@ class Prediction():
             if image is None:
                 print(f"Error: Failed to load image {filename}.")
                 return
-            
             self.filename_list.append(filename)
+
             # Preprocess the image
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 2)
+            image_for_process = image.copy()
+            contrasted_image = cv2.convertScaleAbs(image_for_process, 1.5, 10) # convert scale
+            gray_image = cv2.cvtColor(contrasted_image, cv2.COLOR_BGR2GRAY)
+            blurred_image = cv2.GaussianBlur(gray_image, (3, 3), 1)
             imgThreshold = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 11)
             imgMedian = cv2.medianBlur(imgThreshold, 5)
             kernel = np.ones((3, 3), np.uint8)
@@ -145,11 +147,17 @@ class Prediction():
                 
             # Define the dimensions of the grid
             if warning_occurred:
-                self.false_image(filename,vis_image)
-                self.false_image(f"BW{filename}",bw_image)
+                # print(filename ,i ,count_crop,count_threshold)
+                self.save_image(filename,vis_image)
+                self.save_image(f"BW{filename}",bw_image)
+                # self.save_image(f"contrast{filename}",image_for_process)
                 self.false_images_predict.append(vis_image)
             else:
                 self.total_correct_predictions =+1
+                self.save_image(f"Result{filename}",vis_image)
+                self.save_image(f"BW{filename}",bw_image)
+                # self.save_image(f"contrast{filename}",contrasted_image)
+
             accuracy = (correct_predictions / total_regions) 
             self.accuracy_accumulated.append(accuracy)
         
@@ -157,11 +165,14 @@ class Prediction():
         if self.save_run == True:
             image_read = self.load_images_from_folder(self.runtime_path,1)
             bw_read = self.load_images_from_folder(self.runtime_path,2)
+            true_image = self.load_images_from_folder(self.runtime_path,3)
             # Display or save the resulting mosaic
             self.delete_files(self.runtime_path,1)
             self.delete_files(self.runtime_path,2)
-            self.save_image_mosaic(image_read, len(self.false_images_predict)//3, len(self.false_images_predict)//4,"False_Return")
-            self.save_image_mosaic(bw_read,len(self.false_images_predict)//3, len(self.false_images_predict)//4,"BW_False_Return")
+            self.delete_files(self.runtime_path,3)
+            self.save_image_mosaic(image_read,3,4,"False_Return")
+            self.save_image_mosaic(bw_read,3, 4,"BW_Return")
+            self.save_image_mosaic(true_image,4,3 ,"True_Image_Return")
             self.summary_result()
             self.summary_image()
             self.accumulate_region_accuracy(self.region_data)
@@ -220,12 +231,22 @@ class Prediction():
                         if os.path.isfile(file_path):
                             # print(file_path)
                             os.remove(file_path)
+            if select == 3:
+                # List all files in the folder
+                files = os.listdir(folder_path)
+                # Iterate through each file and delete it
+                for file_name in files:
+                    if file_name.startswith('R'):
+                        file_path = os.path.join(folder_path, file_name)
+                        if os.path.isfile(file_path):
+                            # print(file_path)
+                            os.remove(file_path)
     
     # def false_binary_image(self,filename ,image):
-    def false_image(self, filename ,image):
+    def save_image(self, filename ,image):
         if self.save_run== True:
-            cv2.imwrite(os.path.join(self.runtime_path, f"{filename}_processed.jpg"), image)
-    
+            cv2.imwrite(os.path.join(self.runtime_path, f"{filename}_processed.jpg"), image)     
+                                       
     def load_images_from_folder(self, folder,select):
         if select == 1:
             processed_images = []
@@ -243,15 +264,36 @@ class Prediction():
                     if img is not None:
                         processed_images.append(img)
             return processed_images
+        elif select == 3:
+            processed_images = []
+            for filename in sorted(os.listdir(folder)):
+                if filename.startswith('R'):
+                    img = cv2.imread(os.path.join(folder, filename))
+                    if img is not None:
+                        processed_images.append(img)
+            return processed_images
 
     def save_image_mosaic(self, images, rows, cols, file_name):
         # Calculate the maximum number of images to plot in the mosaic
-        max_images = rows * cols
-        if len(images) > max_images:
-            images = images[:max_images]  # Truncate the list to contain only the first max_images
+       
+        num_images = len(images)
+        # Check if there are no images
+        if num_images == 0:
+            print("No images provided.")
+            return
+        # Calculate the number of rows and columns based on the number of images
+        rows = min(rows, num_images)
+        cols = min(cols, num_images)
+        while rows * cols < num_images:
+            if cols > rows:
+                rows += 1
+            else:
+                cols += 1
 
+        # Calculate the dimensions of the mosaic
         mosaic_height = images[0].shape[0] * rows
         mosaic_width = images[0].shape[1] * cols
+        
         mosaic = np.zeros((mosaic_height, mosaic_width, 3), dtype=np.uint8)
 
         for i in range(rows):
@@ -275,6 +317,9 @@ class Prediction():
         #create confusion matrix
         confusion_matrix = np.array([[self.TP, self.FP],
                                      [self.FN, self.TN]])
+        all_confusion_matrix = self.TP+self.FN+self.TN+self.FP
+        accuracy_matrix = (self.FP+self.FN)/all_confusion_matrix
+        print(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
         plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title('Confusion Matrix')
         plt.colorbar()
@@ -290,6 +335,8 @@ class Prediction():
             for j in range(len(classes)):
                 plt.text(j, i, str(confusion_matrix[i][j]))
         if self.save_run == True: 
+            with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
+                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
             plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
      
     def summary_image(self):
