@@ -1,0 +1,94 @@
+<mxfile host="65bd71144e">
+    <diagram id="Ky7pKJINzQNY7-CCXFby" name="Page-1">
+        <mxGraphModel dx="350" dy="245" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" background="#ffffff" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="9" value="" style="edgeStyle=none;html=1;strokeColor=#000000;align=center;" parent="1" source="2" target="5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="Original images" style="rounded=1;arcSize=50;labelBackgroundColor=none;labelBorderColor=none;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#36393d;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="5" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="" style="edgeStyle=none;html=1;strokeColor=#080808;align=center;" parent="1" source="5" target="10" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Adrjust contrast" style="rounded=1;whiteSpace=wrap;html=1;arcSize=50;fillColor=#FFFFFF;strokeColor=#121212;fontColor=#030202;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="85" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="" style="edgeStyle=none;html=1;strokeColor=#36393d;fillColor=#eeeeee;fontColor=#050505;align=center;" parent="1" source="10" target="12" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="Convert image to Gray scale" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="165" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="" style="edgeStyle=none;html=1;strokeColor=#000000;align=center;" parent="1" source="12" target="14" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="Gaussian filter" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="245" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="" style="edgeStyle=none;html=1;strokeColor=#36393d;fillColor=#eeeeee;fontColor=#050505;align=center;" parent="1" source="14" target="16" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="Adaptive threshold" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="335" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="" style="edgeStyle=none;html=1;strokeColor=#000000;fontColor=#000000;align=center;" edge="1" parent="1" source="16" target="54">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="Birateral filter" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="425" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="" style="edgeStyle=none;html=1;strokeColor=#000000;align=center;" parent="1" source="18" target="21" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="Parking slot&amp;nbsp; Detection&amp;nbsp;" style="whiteSpace=wrap;html=1;rounded=1;arcSize=26;fillColor=#FFFFFF;fontColor=#000000;strokeColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="695" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="Output" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=0" parent="1" vertex="1">
+                    <mxGeometry x="644" y="705" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="Performance" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="785" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="" style="edgeStyle=none;html=1;strokeColor=#000000;fontColor=#000000;align=center;" parent="1" source="34" target="18" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="morphological dilation" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="605" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=center;verticalAlign=middle;strokeColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="490" y="95" width="20" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="Step 1 :&lt;br&gt;Contrast Adjustment" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="140" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=center;verticalAlign=middle;strokeColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="490" y="265" width="20" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="Step 2 :&lt;br&gt;Reduce Noise&amp;nbsp;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="350" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="" style="edgeStyle=none;html=1;strokeColor=#000000;fontColor=#000000;align=center;" edge="1" parent="1" source="54" target="34">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="Adaptive threshold" style="whiteSpace=wrap;html=1;rounded=1;arcSize=50;strokeColor=#36393d;fillColor=#FFFFFF;fontColor=#000000;align=center;" vertex="1" parent="1">
+                    <mxGeometry x="530" y="515" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="57" value="Step 3 :&lt;br&gt;Image Segmentation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="530" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="58" value="Step 4 :&lt;br&gt;Morphological Dilation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="620" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="59" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=center;verticalAlign=middle;strokeColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="490" y="695" width="20" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" value="Step 5 :&lt;br&gt;Parking slot Prediction" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="755" width="130" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

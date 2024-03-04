@@ -1,0 +1,1 @@
+This version is the intregrat of the bilateral filter and the median filter and you can adjust brightness
