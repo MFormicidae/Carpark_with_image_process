@@ -5,8 +5,13 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from collections import defaultdict
 import time
+import seaborn as sns
 class Prediction():
-    def __init__(self, threshold_factor) -> None:
+    def __init__(self, data=None, image_list=None , image_path=None, threshold_factor =None ) -> None:
+    
+        print("program running do not have any operation....")
+        self.start_time = time.time()
+        self.data = data
         self.threshold_factor = threshold_factor
         self.total_correct_predictions = 0
         self.total_regions_processed = 0
@@ -20,38 +25,45 @@ class Prediction():
         self.save_run = False
         self.region_data = []
         self.count =0
-        
-    def process_image(self, image_list, data, image_path, filter_name=None, brightness_adjust=None, save_runtime=None):
-        start_time = time.time()
+        self.debug = False
+        self.image_data = {}
         self.num_images = len(image_list)
-        self.save_run = save_runtime == 1
-       
-        self.filter_name = filter_name
+        for filename in image_list:
+            image = cv2.imread(os.path.join(image_path, filename))
+            if image is not None:
+                self.image_data[filename] = image
+            else:
+                print(f"Error: Failed to load image {filename}.")
+        
+    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,debug=None):
+        self.debug = debug == 1
 
+        self.save_run = save_runtime == 1
+        self.filter_name = filter_name
         if self.save_run:
             self.create_runtime_folder()
 
-        for filename in image_list:
+        for filename, image in self.image_data.items():
             self.file_name = filename
-            if filename not in data:
+            if filename not in self.data:
                 print(f"Error: {filename} not found in data.")
                 return
 
-            annotations = data[filename]["regions"]
+            annotations = self.data[filename]["regions"]
             if not annotations:
                 print(f"No annotations found for {filename}.")
                 return
 
-            image = cv2.imread(os.path.join(image_path, filename))
+            
             if image is None:
                 print(f"Error: Failed to load image {filename}.")
                 return
 
             self.filename_list.append(filename)
-            blurred_image = self.preprocess_image(image, brightness_adjust)
+            blurred_image = self.preprocess_image(image, brightness_adjust,noise_filtering)
             
             if filter_name in ["median", "bilateral"]:
-                imgDilate = self.apply_filter(blurred_image, filter_name)
+                imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, filter_name)
                 processed_image = self.process_annotations(annotations, blurred_image, imgDilate,image)
        
         
@@ -74,42 +86,42 @@ class Prediction():
         self.accumulate_region_accuracy(self.region_data)
 
         self.save_image(f"Pre-process_{filename}",blurred_image) 
-        self.save_image(f"Pre-process_BW{filename}",imgDilate) 
-        self.save_image(f"Processed_{filename}",processed_image)  
+        self.save_image(f"Dilate_image{filename}",imgDilate) 
+        self.save_image(f"Processed_{filename}",processed_image)
+        self.save_image(f"filtered_{filename}",filtered_image)      
+        self.save_image(f"Image_threshold{filename}",image_threshold) 
         end_time = time.time()  # Record end time
-        elapsed_time = end_time - start_time
+        elapsed_time = end_time - self.start_time
         print(f"Total time taken for processing: {elapsed_time:.2f} seconds")
         print(f"Success! your image has been processed with {filter_name} filter,your file saved at {self.runtime_path}")
         
-    def preprocess_image(self, image, brightness_adjust):
-        if brightness_adjust == 1:
-            image = self.adjust_brightness(image)
-    
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.GaussianBlur(gray_image, (3, 3), 1)
-        return image
-    
-    def adjust_brightness(self, image):
-        bright_image = cv2.convertScaleAbs(image, 1.5, 3)
-        
-        return bright_image
-    
-    def theshortest_brightness(self, image):
+    def preprocess_image(self, image, brightness_adjust , noise_filtering):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-        return image
+        if brightness_adjust == 1:
+            image = cv2.convertScaleAbs(image, 1.5, 3)
+        if noise_filtering == "Gaussian":
+            image = cv2.GaussianBlur(image, (3,3), 3)
+        return image    
     
     def apply_filter(self, image, filter_name):
+        # Adaptive thresholding
+        image_threshold = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 21, 10)
+        
+        # Applying specified filter
         if filter_name == "median":
-            image_thres = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,21, 16)
-            image = cv2.medianBlur(image_thres, 5)
+            # Median filtering
+            filtered_image = cv2.medianBlur(image_threshold, 5)
         elif filter_name == "bilateral":
-            filtered_image = cv2.bilateralFilter(image, 3, 20, 20)
-            image = cv2.adaptiveThreshold(filtered_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV,21, 16)
-            kernel = np.ones((3, 3), np.uint8)
-            imgDilate = cv2.dilate(image, kernel, iterations=1)
-            return imgDilate
-        return image
+            # Bilateral filtering
+            filtered_image = cv2.bilateralFilter(image_threshold, 9, 200, 200)
+            # Global thresholding after bilateral filtering
+            ret, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
+        
+        # Dilation
+        kernel = np.ones((3, 3), np.uint8)
+        image = cv2.dilate(filtered_image, kernel, iterations=1)
+        
+        return image, filtered_image, image_threshold
 
     def create_runtime_folder(self):
         folder_name = "run"
@@ -168,13 +180,20 @@ class Prediction():
                         "result": 1
                     })
 
-                else:  # error occur is False negative
+                else:  # error occur is False negative                    
                     self.FP += 1
                     warning_occurred = True
                     self.region_data.append({
                         "region": i,
                         "result": 0
                     })
+                    if self.debug:
+                        print(self.file_name)
+                        print(f"Error occurred in region {i}:")
+                        print(f"Data labels: {data_labels}, Predicted labels: {labels_predicted}")
+                        print(f"Count threshold: {count_threshold}, Total count:{count_crop}")
+                        print(f"Counted in region {i}:{non_count}")
+                        print("--------------------------------------------------")
             # True positive is predicted result is True and Actually label from dataset is True
             elif data_labels == "Empty":
                 labels_dataset.append(0)
@@ -192,20 +211,28 @@ class Prediction():
                         "region": i,
                         "result": 0
                     })
+                    if self.debug:
+                        print(self.file_name)
+                        print(f"Error occurred in region {i}:")
+                        print(f"Data labels: {data_labels}, Predicted labels: {labels_predicted}")
+                        print(f"Count threshold: {count_threshold}, Total count:{count_crop}")
+                        print(f"Counted in region {i}:{non_count}")
+                        print("--------------------------------------------------")
             cv2.putText(vis_image, f"{i}", (x_center, y_center), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 152, 255), 2,
                         cv2.LINE_AA)
-            cv2.putText(vis_image, label, (x_center, y_center + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1, cv2.LINE_AA)
+            cv2.putText(vis_image, label, (x_center, y_center + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 152, 255), 1, cv2.LINE_AA)
 
         # Define the dimensions of the grid
         if warning_occurred:
-        
+            
+            
             self.save_image(f"False_Result{self.file_name}", vis_image)
             self.save_image(f"False_BW_{self.file_name}", imgDilate)
             self.false_images_predict.append(vis_image)
-        else:
-            self.total_correct_predictions += 1  
-            self.save_image(f"True_Result_{self.file_name}", vis_image)
-            self.save_image(f"True_BW_{self.file_name}", imgDilate)
+        
+        self.total_correct_predictions += 1  
+        self.save_image(f"True_Result_{self.file_name}", vis_image)
+        self.save_image(f"True_BW_{self.file_name}", imgDilate)
 
         accuracy = (correct_predictions / total_regions)
         self.accuracy_accumulated.append(accuracy)
@@ -341,23 +368,20 @@ class Prediction():
         #create confusion matrix
         confusion_matrix = np.array([[self.TP, self.FP],
                                      [self.FN, self.TN]])
+        
         all_confusion_matrix = self.TP+self.FN+self.TN+self.FP
         accuracy_matrix = (self.FP+self.FN)/all_confusion_matrix
         print(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
-        plt.imshow(confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues)
-        plt.title('Confusion Matrix')
-        plt.colorbar()
-        classes = ['Full', 'Empty']
-        tick_marks = np.arange(len(classes))
-        plt.xticks(tick_marks, classes)
-        plt.yticks(tick_marks, classes)
 
+        classes = ['Full', 'Empty']
+        # Plot confusion matrix
+        plt.figure(figsize=(4, 4))
+        sns.set(font_scale=1.2)  # Adjust font scale for better readability
+        sns.heatmap(confusion_matrix, annot=True, cmap='Blues', fmt='g', xticklabels=classes, yticklabels=classes, cbar=False)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
-
-        for i in range(len(classes)):
-            for j in range(len(classes)):
-                plt.text(j, i, str(confusion_matrix[i][j]))
+        plt.title('Confusion Matrix')
+       
         if self.save_run == True: 
             with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
                 f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
