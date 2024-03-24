@@ -8,11 +8,29 @@ import time
 import seaborn as sns
 class Prediction():
     def __init__(self, data=None, image_list=None , image_path=None, threshold_factor =None ) -> None:
-    
-        print("program running do not have any operation....")
+         
         self.start_time = time.time()
+        print("program running do not have any operation....")
+        self.create_runtime_folder()
+        self.normal = 16
+        
         self.data = data
         self.threshold_factor = threshold_factor
+        self.save_run = False
+        self.region_data = []
+        self.count =0
+        self.debug = False
+        self.image_data = {}
+        for filename in image_list:
+            image = cv2.imread(os.path.join(image_path, filename))
+            
+            if image is not None:
+                self.image_data[filename] = image
+
+            else:
+                print(f"Error: Failed to load image {filename}.")
+     
+    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,consider_all_regions=False,debug=None):
         self.total_correct_predictions = 0
         self.total_regions_processed = 0
         self.filename_list = []
@@ -22,26 +40,10 @@ class Prediction():
         self.FP = 0  # False Positives
         self.FN = 0  # False Negatives
         self.TN = 0  # True Negatives
-        self.save_run = False
-        self.region_data = []
-        self.count =0
-        self.debug = False
-        self.image_data = {}
-        self.num_images = len(image_list)
-        for filename in image_list:
-            image = cv2.imread(os.path.join(image_path, filename))
-            if image is not None:
-                self.image_data[filename] = image
-            else:
-                print(f"Error: Failed to load image {filename}.")
-        
-    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,debug=None):
+        self.consider_all_regions = consider_all_regions
         self.debug = debug == 1
-
         self.save_run = save_runtime == 1
         self.filter_name = filter_name
-        if self.save_run:
-            self.create_runtime_folder()
 
         for filename, image in self.image_data.items():
             self.file_name = filename
@@ -54,37 +56,30 @@ class Prediction():
                 print(f"No annotations found for {filename}.")
                 return
 
-            
-            if image is None:
-                print(f"Error: Failed to load image {filename}.")
-                return
-
             self.filename_list.append(filename)
             blurred_image = self.preprocess_image(image, brightness_adjust,noise_filtering)
+            if self.consider_all_regions :
+                annotations = {key: annotations[key] for idx, key in enumerate(annotations.keys()) if idx < self.normal}
+            else:
+                annotations = annotations
             
             if filter_name in ["median", "bilateral"]:
                 imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, filter_name)
                 processed_image = self.process_annotations(annotations, blurred_image, imgDilate,image)
-       
-        
 
-        false_result = self.load_images_from_folder(self.runtime_path,1)
-        false_bW = self.load_images_from_folder(self.runtime_path,2)
-        true_result = self.load_images_from_folder(self.runtime_path,3)
-        true_bw = self.load_images_from_folder(self.runtime_path,4)
-        self.delete_files(self.runtime_path,"False_Result")
-        self.delete_files(self.runtime_path,"False_BW")
-        self.delete_files(self.runtime_path,"True_Result")
-        self.delete_files(self.runtime_path,"True_BW")
-       
+        false_result = self.load_images_from_folder(1)
+        false_bW = self.load_images_from_folder(2)
+        true_result = self.load_images_from_folder(3)
+        true_bw = self.load_images_from_folder(4)
+        self.delete_files()
         self.save_image_mosaic(false_result,3,4,"False_Result")
         self.save_image_mosaic(false_bW,3, 4,"False_BW")
         self.save_image_mosaic(true_result,3, 4,"True_Result")
         self.save_image_mosaic(true_bw,3,4 ,"True_BW")
         self.summary_result()
         self.summary_image()
+        self.accumulate_region_accuracy(self.region_data,consider_all_regions= True)
         self.accumulate_region_accuracy(self.region_data)
-
         self.save_image(f"Pre-process_{filename}",blurred_image) 
         self.save_image(f"Dilate_image{filename}",imgDilate) 
         self.save_image(f"Processed_{filename}",processed_image)
@@ -94,6 +89,7 @@ class Prediction():
         elapsed_time = end_time - self.start_time
         print(f"Total time taken for processing: {elapsed_time:.2f} seconds")
         print(f"Success! your image has been processed with {filter_name} filter,your file saved at {self.runtime_path}")
+        
         
     def preprocess_image(self, image, brightness_adjust , noise_filtering):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -134,8 +130,13 @@ class Prediction():
 
         self.runtime_path = os.path.join(parent_folder, f"{folder_name}{num_list}")
         os.makedirs(self.runtime_path)
+        self.normal_folder = os.path.join(self.runtime_path, f"normal_slots")
+        os.makedirs(self.normal_folder)
+        self.special_folder = os.path.join(self.runtime_path, f"special_slots")
+        os.makedirs(self.special_folder)
 
-    def process_annotations(self, annotations, blurred_image, imgDilate,vis_image):
+    def process_annotations(self, annotations, blurred_image, imgDilate,image):
+        vis_image = image.copy()
         labels_dataset = []
         total_regions = 0
         correct_predictions = 0
@@ -224,66 +225,67 @@ class Prediction():
 
         # Define the dimensions of the grid
         if warning_occurred:
-            
-            
             self.save_image(f"False_Result{self.file_name}", vis_image)
             self.save_image(f"False_BW_{self.file_name}", imgDilate)
-            self.false_images_predict.append(vis_image)
-        
+    
+
         self.total_correct_predictions += 1  
         self.save_image(f"True_Result_{self.file_name}", vis_image)
         self.save_image(f"True_BW_{self.file_name}", imgDilate)
-
         accuracy = (correct_predictions / total_regions)
         self.accuracy_accumulated.append(accuracy)
         return vis_image
-    def load_images_from_folder(self, folder,select):
-        if select == 1:
-            processed_images = []
-            for filename in sorted(os.listdir(folder)):
-                if filename.startswith('False_Result'):
-                    img = cv2.imread(os.path.join(folder, filename))
-                    if img is not None:
-                        processed_images.append(img)
-            return processed_images
-        elif select == 2:
-            processed_images = []
-            for filename in sorted(os.listdir(folder)):
-                if filename.startswith('False_BW'):
-                    img = cv2.imread(os.path.join(folder, filename))
-                    if img is not None:
-                        processed_images.append(img)
-            return processed_images
-        elif select == 3:
-            processed_images = []
-            for filename in sorted(os.listdir(folder)):
-                if filename.startswith('True_Result'):
-                    img = cv2.imread(os.path.join(folder, filename))
-                    if img is not None:
-                        processed_images.append(img)
-            return processed_images
-        elif select == 4:
-            processed_images = []
-            for filename in sorted(os.listdir(folder)):
-                if filename.startswith('True_BW'):
-                    img = cv2.imread(os.path.join(folder, filename))
-                    if img is not None:
-                        processed_images.append(img)
-            return processed_images
-    def delete_files(self, folder_path, filenames):
-        if self.save_run == True:
-             # List all files in the folder
-                files = os.listdir(folder_path)
-                # Iterate through each file and delete it
-                for file_name in files:
-                    if file_name.startswith(file_name):
-                        file_path = os.path.join(folder_path, file_name)
-                        if os.path.isfile(file_path):
-                            # print(file_path)
-                            os.remove(file_path)
+    def load_images_from_folder(self, select=None):
 
+        if self.consider_all_regions:
+            folder = self.normal_folder
+        else:
+            folder = self.special_folder
+
+        processed_images = []
+        if select is not None:
+            if select == 1:
+                prefix = 'False_Result'
+            elif select == 2:
+                prefix = 'False_BW'
+            elif select == 3:
+                prefix = 'True_Result'
+            elif select == 4:
+                prefix = 'True_BW'
+            else:
+                raise ValueError("Invalid select value. Select must be between 1 and 4.")
+
+            for filename in sorted(os.listdir(folder)):
+                if filename.startswith(prefix):
+                    img = cv2.imread(os.path.join(folder, filename))
+                    if img is not None:
+                        processed_images.append(img)
+        else:
+            for filename in sorted(os.listdir(folder)):
+                img = cv2.imread(os.path.join(folder, filename))
+                if img is not None:
+                    processed_images.append(img)
+
+        return processed_images
+
+    def delete_files(self):
+        if self.save_run :
+            if self.consider_all_regions:
+                folder_path = self.normal_folder
+            else:
+                folder_path = self.special_folder
+                
+             # List all files in the folder
+            files = os.listdir(folder_path)
+            # Iterate through each file and delete it
+            for file_name in files:
+                if file_name.startswith(file_name):
+                    file_path = os.path.join(folder_path, file_name)
+                    if os.path.isfile(file_path):
+                        # print(file_path)
+                        os.remove(file_path)
            
-    def summary_image(self):
+    def summary_image(self, consider_all_regions=False):
         # Plotting bar chart for all images
         plt.figure()#create plot figure 
         plt.bar(self.filename_list , self.accuracy_accumulated,color='skyblue') #create bar graph
@@ -295,27 +297,35 @@ class Prediction():
         plt.grid(axis='y', linestyle='--')  
         plt.tight_layout()
         if self.save_run == True: 
-            plt.savefig(os.path.join(self.runtime_path, 'Accuracy for Each Image.png'))
-    def accumulate_region_accuracy(self, data):
+            if consider_all_regions:
+                plt.savefig(os.path.join(self.special_folder, 'Accuracy for Each Image.png'))
+            else: 
+                plt.savefig(os.path.join(self.special_folder, 'Accuracy for Each Image.png'))
+            
+    def accumulate_region_accuracy(self, data, consider_all_regions=False):
         # Create a dictionary to store counts of correct and total predictions for each region
         region_counts = defaultdict(lambda: {'correct': 0, 'total': 0})
-
+        
         # Iterate through the data and update counts
         for entry in data:
             region = entry['region']
             result = entry['result']
-            if result == 1:
-                region_counts[region]['correct'] += 1
-            region_counts[region]['total'] += 1
+            # Filter out regions outside the range 1-16 if not considering all regions
+            if consider_all_regions or (1 <= region <= self.normal):
+                if result == 1:
+                    region_counts[region]['correct'] += 1
+                region_counts[region]['total'] += 1
 
         # Calculate accuracy for each region
         accuracy_per_region = {}
         for region, counts in region_counts.items():
-            accuracy_per_region[region] = counts['correct'] / self.num_images
+            accuracy_per_region[region] = counts['correct'] / counts['total'] if counts['total'] > 0 else 0
+
         regions = list(accuracy_per_region.keys())
         accuracies = [accuracy_per_region[region] for region in regions]
+        
         # Plotting
-        plt.figure(figsize=(10, 6))
+        plt.figure()
         plt.bar(regions, accuracies, color='skyblue')
         plt.xlabel('Region')
         plt.ylabel('Accuracy')
@@ -323,8 +333,14 @@ class Prediction():
         plt.xticks(regions)
         plt.ylim(0, 1)  # Limit y-axis to range between 0 and 1 for accuracy
         plt.grid(axis='y', linestyle='--')
-        if self.save_run == True:
-            plt.savefig(os.path.join(self.runtime_path, "Accuracy For Each Region"))
+        
+        if self.save_run:
+            if consider_all_regions:
+                filename = "Accuracy_For_Each_Region.png"
+                plt.savefig(os.path.join(self.special_folder, filename))
+            else:
+                filename ="Accuracy_For_Normal_Region.png"
+                plt.savefig(os.path.join(self.normal_folder, filename)) 
         else:
             plt.show()
     def save_image_mosaic(self, images, rows, cols, file_name):
@@ -360,8 +376,13 @@ class Prediction():
                     mosaic[start_y:end_y, start_x:end_x] = images[idx]
         
         if self.save_run:
-            false_save_time_path = os.path.join(self.runtime_path, f"{file_name}.jpg")
-            cv2.imwrite(false_save_time_path, mosaic)
+            if self.consider_all_regions:
+                false_save_time_path = os.path.join(self.normal_folder, f"Normal_{file_name}.jpg")
+                cv2.imwrite(false_save_time_path, mosaic) 
+            else:
+                false_save_time_path = os.path.join(self.special_folder, f"Spacial_{file_name}.jpg")
+                cv2.imwrite(false_save_time_path, mosaic) 
+            
         else:
             cv2.imshow("False_Return", mosaic)
     def summary_result(self):
@@ -375,19 +396,26 @@ class Prediction():
 
         classes = ['Full', 'Empty']
         # Plot confusion matrix
-        plt.figure(figsize=(4, 4))
-        sns.set(font_scale=1.2)  # Adjust font scale for better readability
+        plt.figure()
+        sns.set(font_scale=1)  
         sns.heatmap(confusion_matrix, annot=True, cmap='Blues', fmt='g', xticklabels=classes, yticklabels=classes, cbar=False)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
         plt.title('Confusion Matrix')
        
-        if self.save_run == True: 
-            with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
-                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
-            plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
+        if self.save_run == True:
+            if self.consider_all_regions: 
+                with open(f"{self.normal_folder}/threshold_accuracy.txt", "w") as f:
+                    f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
+                plt.savefig(os.path.join(self.normal_folder, 'confusion_matrix.png'))
+            else:
+                with open(f"{self.special_folder}/threshold_accuracy.txt", "w") as f:
+                    f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
+                plt.savefig(os.path.join(self.special_folder, 'confusion_matrix.png'))
      
     def save_image(self, filename ,image):
         if self.save_run:
-            cv2.imwrite(os.path.join(self.runtime_path, filename), image)
-
+            if self.consider_all_regions: 
+                cv2.imwrite(os.path.join(self.normal_folder, filename), image)
+            else:
+                cv2.imwrite(os.path.join(self.special_folder, filename), image)

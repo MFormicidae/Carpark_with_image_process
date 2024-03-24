@@ -5,7 +5,7 @@ from matplotlib.patches import Polygon
 
 class ReadData:
     def __init__(self):
-        self.labels_pos = r'D:\Carpark_with_image_process\dataset\label\labels_normal_vgg.json'
+        self.labels_pos = r'D:\Carpark_with_image_process\dataset\label\specail_labeled_vgg.json'
         self.image_path = r"D:\Carpark_with_image_process\dataset\images"
 
     def get_data(self):
