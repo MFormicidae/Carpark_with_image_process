@@ -16,7 +16,7 @@ threshold_factors = list(range(start, end+1))  # Threshold factors from 0.01 to 
 for factor in threshold_factors:
     threshold = factor / 100.0  # Convert factor to threshold value
     predict = Prediction(data, image_list, image_path, threshold_factor=threshold)
-    predict.process_image(filter_name="bilateral",noise_filtering = "Gaussian", brightness_adjust=0, save_runtime=1, consider_all_regions=True, ksize=3,debug=0)
+    predict.process_image(filter_name="average",noise_filtering = "Gaussian", brightness_adjust=0, save_runtime=1, consider_all_regions=True, ksize=3,debug=0)
     print(f"Successfully processed with threshold factor: {threshold}")
     print("--------------------------------------------------------------------------------------------------------------------")
 print("All iterations completed.")

@@ -6,6 +6,9 @@ from PIL import Image
 from collections import defaultdict
 import time
 import seaborn as sns
+from scipy.datasets import face
+from scipy.signal import wiener
+
 class Prediction():
     def __init__(self, data=None, image_list=None , image_path=None, threshold_factor =None ) -> None:
          
@@ -58,7 +61,7 @@ class Prediction():
             else:
                 annotations = annotations
             
-            if filter_name in ["median", "bilateral"]:
+            if filter_name in ["median", "bilateral", "average"]:
                 imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, filter_name)
                 processed_image = self.process_annotations(annotations, blurred_image, imgDilate,image)
 
@@ -109,8 +112,13 @@ class Prediction():
             # Bilateral filtering
             filtered_image = cv2.bilateralFilter(image_threshold, 9, 200, 200)
             # Global thresholding after bilateral filtering
-            ret, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
-        
+            _, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
+        elif filter_name == "average":
+            # Wiener filtering
+            filtered_image =cv2.boxFilter(image_threshold,-1,(5,5))
+            _, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
+
+           
         # Dilation
         kernel = np.ones((3, 3), np.uint8)
         image = cv2.dilate(filtered_image, kernel, iterations=1)
@@ -364,13 +372,14 @@ class Prediction():
         else:
             cv2.imshow("False_Return", mosaic)
     def summary_result(self):
-        #create confusion matrix
+        # Create confusion matrix
         confusion_matrix = np.array([[self.TP, self.FP],
                                      [self.FN, self.TN]])
         
-        all_confusion_matrix = self.TP+self.FN+self.TN+self.FP
-        accuracy_matrix = (self.FP+self.FN)/all_confusion_matrix
-        print(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}")
+        all_confusion_matrix = self.TP + self.TN + self.FN + self.FP
+        print(self.TP + self.TN,self.FP + self.FN)
+        accuracy_matrix = (self.TP + self.TN) / all_confusion_matrix
+        print(f"threshold_value: {self.threshold_factor}, accuracy_value: {accuracy_matrix}")
 
         classes = ['Full', 'Empty']
         # Plot confusion matrix
@@ -381,9 +390,9 @@ class Prediction():
         plt.xlabel('Predicted label')
         plt.title('Confusion Matrix')
        
-        if self.save_run == True:
+        if self.save_run:
             with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
-                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
+                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1 - accuracy_matrix}, filter_name: {self.filter_name}")
             plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
 
      
