@@ -12,30 +12,25 @@ class Prediction():
         self.start_time = time.time()
         print("program running do not have any operation....")
         self.create_runtime_folder()
-        self.normal = 16
-        
+        self.normal = 44
         self.data = data
         self.threshold_factor = threshold_factor
         self.save_run = False
         self.region_data = []
-        self.count =0
         self.debug = False
         self.image_data = {}
         for filename in image_list:
             image = cv2.imread(os.path.join(image_path, filename))
-            
             if image is not None:
                 self.image_data[filename] = image
-
             else:
                 print(f"Error: Failed to load image {filename}.")
      
-    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,consider_all_regions=False,debug=None):
+    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,consider_all_regions=False, ksize = None, debug=None):
         self.total_correct_predictions = 0
         self.total_regions_processed = 0
         self.filename_list = []
         self.accuracy_accumulated =[]
-        self.false_images_predict=[]
         self.TP = 0  # True Positives
         self.FP = 0  # False Positives
         self.FN = 0  # False Negatives
@@ -57,7 +52,7 @@ class Prediction():
                 return
 
             self.filename_list.append(filename)
-            blurred_image = self.preprocess_image(image, brightness_adjust,noise_filtering)
+            blurred_image = self.preprocess_image(image, brightness_adjust,noise_filtering,ksize=ksize)
             if self.consider_all_regions :
                 annotations = {key: annotations[key] for idx, key in enumerate(annotations.keys()) if idx < self.normal}
             else:
@@ -91,12 +86,15 @@ class Prediction():
         print(f"Success! your image has been processed with {filter_name} filter,your file saved at {self.runtime_path}")
         
         
-    def preprocess_image(self, image, brightness_adjust , noise_filtering):
+    def preprocess_image(self, image, brightness_adjust , noise_filtering ,ksize):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         if brightness_adjust == 1:
             image = cv2.convertScaleAbs(image, 1.5, 3)
         if noise_filtering == "Gaussian":
-            image = cv2.GaussianBlur(image, (3,3), 3)
+            image = cv2.GaussianBlur(image, (ksize,ksize), 3)
+        elif noise_filtering == "blur":
+            image = cv2.blur(image,(ksize,ksize))
+        
         return image    
     
     def apply_filter(self, image, filter_name):
@@ -130,10 +128,7 @@ class Prediction():
 
         self.runtime_path = os.path.join(parent_folder, f"{folder_name}{num_list}")
         os.makedirs(self.runtime_path)
-        self.normal_folder = os.path.join(self.runtime_path, f"normal_slots")
-        os.makedirs(self.normal_folder)
-        self.special_folder = os.path.join(self.runtime_path, f"special_slots")
-        os.makedirs(self.special_folder)
+        
 
     def process_annotations(self, annotations, blurred_image, imgDilate,image):
         vis_image = image.copy()
@@ -236,11 +231,9 @@ class Prediction():
         self.accuracy_accumulated.append(accuracy)
         return vis_image
     def load_images_from_folder(self, select=None):
+        folder = self.runtime_path
 
-        if self.consider_all_regions:
-            folder = self.normal_folder
-        else:
-            folder = self.special_folder
+
 
         processed_images = []
         if select is not None:
@@ -270,11 +263,7 @@ class Prediction():
 
     def delete_files(self):
         if self.save_run :
-            if self.consider_all_regions:
-                folder_path = self.normal_folder
-            else:
-                folder_path = self.special_folder
-                
+            folder_path = self.runtime_path
              # List all files in the folder
             files = os.listdir(folder_path)
             # Iterate through each file and delete it
@@ -286,7 +275,6 @@ class Prediction():
                         os.remove(file_path)
            
     def summary_image(self, consider_all_regions=False):
-        # Plotting bar chart for all images
         plt.figure()#create plot figure 
         plt.bar(self.filename_list , self.accuracy_accumulated,color='skyblue') #create bar graph
         #create a label
@@ -297,10 +285,8 @@ class Prediction():
         plt.grid(axis='y', linestyle='--')  
         plt.tight_layout()
         if self.save_run == True: 
-            if consider_all_regions:
-                plt.savefig(os.path.join(self.special_folder, 'Accuracy for Each Image.png'))
-            else: 
-                plt.savefig(os.path.join(self.special_folder, 'Accuracy for Each Image.png'))
+            plt.savefig(os.path.join(self.runtime_path, 'Accuracy for Each Image.png'))
+            
             
     def accumulate_region_accuracy(self, data, consider_all_regions=False):
         # Create a dictionary to store counts of correct and total predictions for each region
@@ -330,17 +316,13 @@ class Prediction():
         plt.xlabel('Region')
         plt.ylabel('Accuracy')
         plt.title('Region vs. Accuracy')
-        plt.xticks(regions)
+        plt.xticks(regions,fontsize=5)
         plt.ylim(0, 1)  # Limit y-axis to range between 0 and 1 for accuracy
         plt.grid(axis='y', linestyle='--')
         
         if self.save_run:
-            if consider_all_regions:
-                filename = "Accuracy_For_Each_Region.png"
-                plt.savefig(os.path.join(self.special_folder, filename))
-            else:
-                filename ="Accuracy_For_Normal_Region.png"
-                plt.savefig(os.path.join(self.normal_folder, filename)) 
+            filename ="Accuracy_For_Normal_Region.png"
+            plt.savefig(os.path.join(self.runtime_path, filename))
         else:
             plt.show()
     def save_image_mosaic(self, images, rows, cols, file_name):
@@ -376,12 +358,8 @@ class Prediction():
                     mosaic[start_y:end_y, start_x:end_x] = images[idx]
         
         if self.save_run:
-            if self.consider_all_regions:
-                false_save_time_path = os.path.join(self.normal_folder, f"Normal_{file_name}.jpg")
-                cv2.imwrite(false_save_time_path, mosaic) 
-            else:
-                false_save_time_path = os.path.join(self.special_folder, f"Spacial_{file_name}.jpg")
-                cv2.imwrite(false_save_time_path, mosaic) 
+            false_save_time_path = os.path.join(self.runtime_path, f"Normal_{file_name}.jpg")
+            cv2.imwrite(false_save_time_path, mosaic) 
             
         else:
             cv2.imshow("False_Return", mosaic)
@@ -404,18 +382,12 @@ class Prediction():
         plt.title('Confusion Matrix')
        
         if self.save_run == True:
-            if self.consider_all_regions: 
-                with open(f"{self.normal_folder}/threshold_accuracy.txt", "w") as f:
-                    f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
-                plt.savefig(os.path.join(self.normal_folder, 'confusion_matrix.png'))
-            else:
-                with open(f"{self.special_folder}/threshold_accuracy.txt", "w") as f:
-                    f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
-                plt.savefig(os.path.join(self.special_folder, 'confusion_matrix.png'))
+            with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
+                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1-accuracy_matrix}, filter_name: {self.filter_name}")
+            plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
+
      
     def save_image(self, filename ,image):
         if self.save_run:
-            if self.consider_all_regions: 
-                cv2.imwrite(os.path.join(self.normal_folder, filename), image)
-            else:
-                cv2.imwrite(os.path.join(self.special_folder, filename), image)
+            cv2.imwrite(os.path.join(self.runtime_path, filename), image)
+

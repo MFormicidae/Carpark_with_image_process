@@ -5,8 +5,8 @@ from matplotlib.patches import Polygon
 
 class ReadData:
     def __init__(self):
-        self.labels_pos = r'D:\Carpark_with_image_process\dataset\label\specail_labeled_vgg.json'
-        self.image_path = r"D:\Carpark_with_image_process\dataset\images"
+        self.labels_pos = r'D:\Carpark_with_image_process\benchmark_Dataset\labels\labels_all62_vgg.json'
+        self.image_path = r"D:\Carpark_with_image_process\benchmark_Dataset\Images"
 
     def get_data(self):
         with open(self.labels_pos) as f:
