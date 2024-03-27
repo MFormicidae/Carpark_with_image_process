@@ -61,7 +61,7 @@ class Prediction():
             else:
                 annotations = annotations
             
-            if filter_name in ["median", "bilateral", "average"]:
+            if filter_name in ["median", "bilateral", "sharp"]:
                 imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, filter_name)
                 processed_image = self.process_annotations(annotations, blurred_image, imgDilate,image)
 
@@ -113,11 +113,11 @@ class Prediction():
             filtered_image = cv2.bilateralFilter(image_threshold, 9, 200, 200)
             # Global thresholding after bilateral filtering
             _, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
-        elif filter_name == "average":
-            # Wiener filtering
-            filtered_image =cv2.boxFilter(image_threshold,-1,(5,5))
-            _, filtered_image = cv2.threshold(filtered_image, 126, 255, cv2.THRESH_BINARY)
-
+        elif filter_name == "sharp":  
+            kernel3 = np.array([[-1, -1,  -1],
+                                [-1,  8, -1],
+                                [-1, -1,  -1]])
+            filtered_image = cv2.filter2D(src=image_threshold, ddepth=-1, kernel=kernel3)
            
         # Dilation
         kernel = np.ones((3, 3), np.uint8)
@@ -392,7 +392,7 @@ class Prediction():
        
         if self.save_run:
             with open(f"{self.runtime_path}/threshold_accuracy.txt", "w") as f:
-                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {1 - accuracy_matrix}, filter_name: {self.filter_name}")
+                f.write(f"threshold_value: {self.threshold_factor}, accuracy_value: {accuracy_matrix}, filter_name: {self.filter_name}")
             plt.savefig(os.path.join(self.runtime_path, 'confusion_matrix.png'))
 
      
