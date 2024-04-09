@@ -10,12 +10,16 @@ from scipy.datasets import face
 from scipy.signal import wiener
 
 class Prediction():
-    def __init__(self, data=None, image_list=None , image_path=None, threshold_factor =None ) -> None:
+    def __init__(self, data=None, image_list=None , image_path=None, threshold_factor =None ,brightness_adjust=None ,filter_name=None,noise_filtering = None,ksize = None) -> None:
          
         self.start_time = time.time()
         print("program running do not have any operation....")
+        self.brightness_adjust = brightness_adjust
+        self.filter_name = filter_name
+        self.noise_filtering = noise_filtering
+        self.ksize = ksize
         self.create_runtime_folder()
-        self.normal = 44
+        self.normal = 16
         self.data = data
         self.threshold_factor = threshold_factor
         self.save_run = False
@@ -29,7 +33,7 @@ class Prediction():
             else:
                 print(f"Error: Failed to load image {filename}.")
      
-    def process_image(self,filter_name=None,noise_filtering = None, brightness_adjust=None, save_runtime=None,consider_all_regions=False, ksize = None, debug=None):
+    def process_image(self, save_runtime=None,consider_all_regions=False,  debug=None):
         self.total_correct_predictions = 0
         self.total_regions_processed = 0
         self.filename_list = []
@@ -41,7 +45,7 @@ class Prediction():
         self.consider_all_regions = consider_all_regions
         self.debug = debug == 1
         self.save_run = save_runtime == 1
-        self.filter_name = filter_name
+        
 
         for filename, image in self.image_data.items():
             self.file_name = filename
@@ -55,14 +59,14 @@ class Prediction():
                 return
 
             self.filename_list.append(filename)
-            blurred_image = self.preprocess_image(image, brightness_adjust,noise_filtering,ksize=ksize)
+            blurred_image = self.preprocess_image(image, self.brightness_adjust,self.noise_filtering,ksize=self.ksize)
             if self.consider_all_regions :
                 annotations = {key: annotations[key] for idx, key in enumerate(annotations.keys()) if idx < self.normal}
             else:
                 annotations = annotations
             
-            if filter_name in ["median", "bilateral", "sharp"]:
-                imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, filter_name)
+            if self.filter_name in ["median", "bilateral", "sharp","non"]:
+                imgDilate ,filtered_image,image_threshold= self.apply_filter(blurred_image, self.filter_name)
                 processed_image = self.process_annotations(annotations, blurred_image, imgDilate,image)
 
         false_result = self.load_images_from_folder(1)
@@ -86,7 +90,7 @@ class Prediction():
         end_time = time.time()  # Record end time
         elapsed_time = end_time - self.start_time
         print(f"Total time taken for processing: {elapsed_time:.2f} seconds")
-        print(f"Success! your image has been processed with {filter_name} filter,your file saved at {self.runtime_path}")
+        print(f"Success! your image has been processed with {self.filter_name} filter,your file saved at {self.runtime_path}")
         
         
     def preprocess_image(self, image, brightness_adjust , noise_filtering ,ksize):
@@ -118,7 +122,9 @@ class Prediction():
                                 [-1,  8, -1],
                                 [-1, -1,  -1]])
             filtered_image = cv2.filter2D(src=image_threshold, ddepth=-1, kernel=kernel3)
-           
+            
+        elif filter_name == "non":
+            filtered_image = image_threshold
         # Dilation
         kernel = np.ones((3, 3), np.uint8)
         image = cv2.dilate(filtered_image, kernel, iterations=1)
@@ -126,15 +132,29 @@ class Prediction():
         return image, filtered_image, image_threshold
 
     def create_runtime_folder(self):
-        folder_name = "run"
+        if self.brightness_adjust == 1:
+            folder_name = f"{self.noise_filtering}_bright_{self.filter_name}_{self.ksize}x{self.ksize}"
+        elif self.brightness_adjust == 0:
+            folder_name = f"{self.noise_filtering}_nonbright_{self.filter_name}_{self.ksize}x{self.ksize}"
+        
+        # Construct parent folder path
         parent_folder = f"./{folder_name}"
+        
+        # Create parent folder if it doesn't exist
         os.makedirs(parent_folder, exist_ok=True)
 
-        num_list = 1
-        while os.path.exists(f"{parent_folder}/{folder_name}{num_list}"):
-            num_list += 1
+        # Find the maximum index of existing folders with the same parent folder
+        existing_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
+        if existing_folders:
+            existing_indices = [int(folder_name.split('run')[1]) for folder_name in existing_folders if folder_name.startswith('run')]
+            num_list = max(existing_indices) + 1
+        else:
+            num_list = 1
 
-        self.runtime_path = os.path.join(parent_folder, f"{folder_name}{num_list}")
+        # Set self.runtime_path to the path of the newly created folder
+        self.runtime_path = os.path.join(parent_folder, f"run{num_list}")
+        
+        # Create the runtime folder
         os.makedirs(self.runtime_path)
         
 
